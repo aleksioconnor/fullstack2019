@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react'
 import personService from './services/persons';
 
+// TODO fix styles
 
-const Persons = ({persons, filterValue, setPersons}) => {
+// List of people and their numbers in the address book. 
+// returns a list of people and their numbers
+const Persons = ({persons, filterValue, setPersons, setMessage, setError}) => {
   const filteredNames = persons.filter(person => person.name.toUpperCase().includes(filterValue.toUpperCase()));
   const names = filteredNames.map(person =>
     <li key={person.name}>
+
         {person.name} {person.number} 
+
         <Delete 
+          setMessage={setMessage}
           person={person}
           persons={persons}
           setPersons={setPersons}
+          setError={setError}
         />
+
     </li>
   )
-
   return (
       <div>
         <ul>
@@ -24,13 +31,33 @@ const Persons = ({persons, filterValue, setPersons}) => {
   )
 }
 
+const Notification = (props) => {
+  const notifStyle = props.error ? styles.notificationStyles : styles.errorNotificationStyles;
+  console.log(props.error)
+  if (props.message === null) {
+    return null;
+  }
+  else {
+    return (
+      <div style={notifStyle}> {props.message} </div>
+    )
+  }
+}
+
+// Delete button next to entries in address book.
+// By clicking on delete, removes entry from persons state and from database
 const Delete = (props) => {
   const clickHandler = () => {
-    const result = window.confirm("Haluatko varmasti poistaa henkilön luettelosta?");
+    const result = window.confirm( "Haluatko varmasti poistaa henkilön luettelosta?" );
     if (result) {
       personService.remove(props.person.id)
       .then(response => {
         const filteredPersons = props.persons.filter(person => person.id !== props.person.id);
+        props.setMessage(`${props.person.name} poistettiin onnistuneesti`)
+        props.setError(false)
+        setTimeout(() => {
+          props.setMessage(null)
+        }, 5000);
         props.setPersons(filteredPersons);
       })
     }
@@ -40,6 +67,7 @@ const Delete = (props) => {
   )
 }
 
+// Search functionality. Single input field that calls handeFilterChange to filter values out
 const Filter = (props) => {
   return (
     <div>
@@ -51,6 +79,7 @@ const Filter = (props) => {
   )
 }
 
+// Form to add new people to the list
 const PersonForm = (props) => {
   return (
     <div>
@@ -78,8 +107,8 @@ const PersonForm = (props) => {
     </div>
   )
 }
-const App = () => {
 
+const App = () => {
   const [ persons, setPersons] = useState([]) 
 
   const hook = () => {
@@ -94,11 +123,39 @@ const App = () => {
   const [ newName, setNewName ] = useState('')
   const [ newNumber, setNewNumber ] = useState('')
   const [ filterValue, setFilter] = useState('')
+  const [ message, setMessage ] = useState(null)
+  const [ error, setError] = useState(false)
 
   const addName = (event) => {
     event.preventDefault();
-    if(persons.some(item => item.name === newName)) {
-        alert(`${newName} on jo luettelossa`);
+    if (persons.some(item => item.name === newName)) {
+        const entry = persons.find(person => person.name === newName);
+        const id = entry.id;
+
+        if (entry.number === newNumber) {
+          setError(true)
+          setMessage(`${newName} on jo luettelossa`);
+        }
+
+        else {
+          const result = window.confirm(`${newName} on jo luettelossa, korvataanko vanha numero uudella?`);
+
+          if (result) {
+            const changedEntry = {...entry, number: newNumber}; // important
+            personService.edit(id, changedEntry).then(response => {
+              setPersons(persons.map(person => person.id !== id ? person : response.data));
+              setMessage(`Henkilön ${response.data.name} tiedot muutettiin onnistuneesti`)
+              setError(false);
+              setTimeout(() => {
+                setMessage(null)
+              }, 5000)
+            })
+            .catch(error => {
+              setMessage(`Henkilö ${changedEntry.name} oli jo poistettu`)
+              setError(true)
+            })
+          }
+        }
     }
     else {
       const newObj = { 
@@ -108,6 +165,11 @@ const App = () => {
       personService.create(newObj)
         .then(response => {
           setPersons(persons.concat(response.data));
+          setMessage(`Lisättiin ${response.data.name} onnistuneesti `)
+          setError(true);
+          setTimeout(() => {
+            setMessage(null)
+          }, 5000)
         })
     }
   }
@@ -127,6 +189,7 @@ const App = () => {
   return (
     <div>
       <h2>Puhelinluettelo</h2>
+      <Notification message={message} error={error}/>
       <Filter 
         handleFilterChange={handleFilterChange}
         filterValue={filterValue}
@@ -144,9 +207,30 @@ const App = () => {
         persons={persons}
         filterValue={filterValue}
         setPersons={setPersons}
+        setMessage={setMessage}
+        setError={setError}
       />
     </div>
   )
 }
 
 export default App
+
+const styles = {
+  notificationStyles: {
+    display: 'inline-block',
+    padding: '20px',
+    border: '1px solid green',
+    borderRadius: '20px',
+    backgroundColor: '#6161612b',
+    marginBottom: '20px',
+  },
+  errorNotificationStyles: {
+    display: 'inline-block',
+    padding: '20px',
+    border: '1px solid red',
+    borderRadius: '20px',
+    backgroundColor: '#6161612b',
+    marginBottom: '20px',
+  }
+}
