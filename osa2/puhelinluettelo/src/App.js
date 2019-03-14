@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+
 
 const Persons = ({persons, filterValue}) => {
   const filteredNames = persons.filter(person => person.name.toUpperCase().includes(filterValue.toUpperCase()));
@@ -56,12 +58,21 @@ const PersonForm = (props) => {
   )
 }
 const App = () => {
-  const [ persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456' },
-    { name: 'Martti Tienari', number: '040-123456' },
-    { name: 'Arto Järvinen', number: '040-123456' },
-    { name: 'Lea Kutvonen', number: '040-123456' },
-  ]) 
+
+  const [ persons, setPersons] = useState([]) 
+
+  const hook = () => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }
+
+  useEffect(hook, []) // only fire on first render (empty array as second parameter)
+
+  
+
   const [ newName, setNewName ] = useState('')
   const [ newNumber, setNewNumber ] = useState('')
   const [ filterValue, setFilter] = useState('')
