@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import personService from './services/persons';
 
 
-const Persons = ({persons, filterValue}) => {
+const Persons = ({persons, filterValue, setPersons}) => {
   const filteredNames = persons.filter(person => person.name.toUpperCase().includes(filterValue.toUpperCase()));
   const names = filteredNames.map(person =>
     <li key={person.name}>
-        {person.name} {person.number}
+        {person.name} {person.number} 
+        <Delete 
+          person={person}
+          persons={persons}
+          setPersons={setPersons}
+        />
     </li>
   )
 
@@ -16,6 +21,22 @@ const Persons = ({persons, filterValue}) => {
           {names}
         </ul>
       </div>
+  )
+}
+
+const Delete = (props) => {
+  const clickHandler = () => {
+    const result = window.confirm("Haluatko varmasti poistaa henkilön luettelosta?");
+    if (result) {
+      personService.remove(props.person.id)
+      .then(response => {
+        const filteredPersons = props.persons.filter(person => person.id !== props.person.id);
+        props.setPersons(filteredPersons);
+      })
+    }
+  }
+  return (
+    <button onClick={() => clickHandler()}>poista</button>
   )
 }
 
@@ -62,16 +83,13 @@ const App = () => {
   const [ persons, setPersons] = useState([]) 
 
   const hook = () => {
-    axios
-      .get('http://localhost:3001/persons')
+    personService.getAll()
       .then(response => {
         setPersons(response.data)
       })
   }
 
   useEffect(hook, []) // only fire on first render (empty array as second parameter)
-
-  
 
   const [ newName, setNewName ] = useState('')
   const [ newNumber, setNewNumber ] = useState('')
@@ -87,7 +105,10 @@ const App = () => {
         name: newName,
         number: newNumber,
       };
-      setPersons(persons.concat(newObj));
+      personService.create(newObj)
+        .then(response => {
+          setPersons(persons.concat(response.data));
+        })
     }
   }
 
@@ -122,6 +143,7 @@ const App = () => {
       <Persons 
         persons={persons}
         filterValue={filterValue}
+        setPersons={setPersons}
       />
     </div>
   )
