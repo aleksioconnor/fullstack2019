@@ -5,7 +5,7 @@ import personService from './services/persons';
 
 // List of people and their numbers in the address book. 
 // returns a list of people and their numbers
-const Persons = ({persons, filterValue, setPersons, setMessage, setError}) => {
+const Persons = ({persons, filterValue, setPersons, setMessage, setError, personService}) => {
   const filteredNames = persons.filter(person => person.name.toUpperCase().includes(filterValue.toUpperCase()));
   const names = filteredNames.map(person =>
     <li key={person.name}>
@@ -13,6 +13,7 @@ const Persons = ({persons, filterValue, setPersons, setMessage, setError}) => {
         {person.name} {person.number} 
 
         <Delete 
+          personService={personService}
           setMessage={setMessage}
           person={person}
           persons={persons}
@@ -32,8 +33,8 @@ const Persons = ({persons, filterValue, setPersons, setMessage, setError}) => {
 }
 
 const Notification = (props) => {
-  const notifStyle = props.error ? styles.notificationStyles : styles.errorNotificationStyles;
-  console.log(props.error)
+  const notifStyle = props.error ? styles.errorNotificationStyles : styles.notificationStyles;
+  console.log("error value passed as prop ", props.error)
   if (props.message === null) {
     return null;
   }
@@ -59,6 +60,16 @@ const Delete = (props) => {
           props.setMessage(null)
         }, 5000);
         props.setPersons(filteredPersons);
+      })
+      .catch(error => {
+        props.setMessage(`Henkilö ${props.person.name} oli jo poistettu`)
+        setTimeout(() => {
+          props.setMessage(null)
+        }, 5000)
+        props.personService.getAll().then(response => {
+          props.setPersons(response.data)
+        });
+        props.setError(true)
       })
     }
   }
@@ -125,6 +136,7 @@ const App = () => {
   const [ filterValue, setFilter] = useState('')
   const [ message, setMessage ] = useState(null)
   const [ error, setError] = useState(false)
+  console.log(error, "initialised as")
 
   const addName = (event) => {
     event.preventDefault();
@@ -133,8 +145,11 @@ const App = () => {
         const id = entry.id;
 
         if (entry.number === newNumber) {
-          setError(true)
+          setError(true);
           setMessage(`${newName} on jo luettelossa`);
+          setTimeout(() => {
+            setMessage(null)
+          }, 5000)
         }
 
         else {
@@ -152,6 +167,12 @@ const App = () => {
             })
             .catch(error => {
               setMessage(`Henkilö ${changedEntry.name} oli jo poistettu`)
+              personService.getAll().then(response => {
+                setPersons(response.data)
+              });
+              setTimeout(() => {
+                setMessage(null)
+              }, 5000)
               setError(true)
             })
           }
@@ -166,7 +187,7 @@ const App = () => {
         .then(response => {
           setPersons(persons.concat(response.data));
           setMessage(`Lisättiin ${response.data.name} onnistuneesti `)
-          setError(true);
+          setError(false);
           setTimeout(() => {
             setMessage(null)
           }, 5000)
@@ -209,6 +230,7 @@ const App = () => {
         setPersons={setPersons}
         setMessage={setMessage}
         setError={setError}
+        personService={personService}
       />
     </div>
   )

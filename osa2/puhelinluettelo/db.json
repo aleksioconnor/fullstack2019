@@ -1,39 +1,19 @@
 {
   "persons": [
     {
-      "name": "Sauli",
-      "number": "0500",
-      "id": 4
+      "name": "Sami",
+      "number": "34343",
+      "id": 18
     },
     {
-      "name": "Mikko",
-      "number": "0100",
-      "id": 5
+      "name": "Jorma uotila2",
+      "number": "020424",
+      "id": 19
     },
     {
       "name": "Jorma",
-      "number": "0600",
-      "id": 6
-    },
-    {
-      "name": "Sepeteus",
-      "number": "0600",
-      "id": 7
-    },
-    {
-      "name": "Antero",
-      "number": "0600",
-      "id": 8
-    },
-    {
-      "name": "Norman",
-      "number": "0600",
-      "id": 9
-    },
-    {
-      "name": "Sale",
-      "number": "0333555555635",
-      "id": 10
+      "number": "uotila23",
+      "id": 20
     }
   ]
 }
